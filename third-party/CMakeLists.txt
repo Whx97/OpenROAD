@@ -33,6 +33,8 @@
 ##
 ###############################################################################
 
+add_subdirectory(flute3)
+add_subdirectory(salt)
 
 if(ENABLE_TESTS)
   add_subdirectory(gtest EXCLUDE_FROM_ALL)

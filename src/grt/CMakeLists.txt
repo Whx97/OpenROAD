@@ -67,6 +67,7 @@ target_sources(grt
 target_include_directories(grt_lib
   PUBLIC
     include
+    /home/wuhongxi/OpenROAD/third-party/salt
   PRIVATE
     src
 )
@@ -74,6 +75,7 @@ target_include_directories(grt_lib
 target_include_directories(grt
   PUBLIC
     include
+    /home/wuhongxi/OpenROAD/third-party/salt
   PRIVATE
     src
 )
@@ -88,6 +90,7 @@ target_link_libraries(grt_lib
     rsz_lib
     OpenSTA
     Boost::boost
+    salt
 )
 
 target_link_libraries(grt
@@ -102,6 +105,7 @@ target_link_libraries(grt
     rsz
     OpenSTA
     Boost::boost
+    salt
 )
 
 if (Python3_FOUND AND BUILD_PYTHON)

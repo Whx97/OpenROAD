@@ -109,6 +109,70 @@ Tree SteinerTreeBuilder::makeSteinerTree(const std::vector<int>& x,
   return flt::flute(x, y, flute_accuracy);
 }
 
+Tree SteinerTreeBuilder::makeSALTTree(const std::vector<int>& x,
+                  const std::vector<int>& y,
+                  const int drvr_index)
+{
+  std::vector<std::shared_ptr<salt::Pin>> salt_pins;
+  
+  auto copy_x = x;
+  auto copy_y = x;
+  std::swap(copy_x[0], copy_x[drvr_index]);
+  std::swap(copy_y[0], copy_y[drvr_index]);
+
+  for (size_t i = 0; i < copy_x.size(); ++i) {
+    auto loc_x = copy_x[i];
+    auto loc_y = copy_y[i];
+    auto salt_pin = std::make_shared<salt::Pin>(loc_x, loc_y, i, 0);
+    salt_pins.push_back(salt_pin);
+  }
+
+  // run SALT
+  salt::Net salt_net;
+  salt_net.init(0, "", salt_pins);
+  salt::Tree salt_tree;
+  salt::SaltBuilder salt_builder;
+  salt_builder.Run(salt_net, salt_tree, 0);
+  // salt::SelfBuilder selfB(net.pins.size());
+  // selfB.Run(net, tree, 1, _timing_engine, _timing_engine->findNet(net_name.c_str()), pin2loc);
+
+  std::cout << salt_tree;
+  convertToBinaryTree(salt_tree.source);
+  int node_num = salt_tree.UpdateId();
+
+  salt_tree.preOrder([&](const std::shared_ptr<salt::TreeNode>& node) {
+    node->children.clear();
+    if (node->left) {
+      node->children.push_back(node->left);
+      node->left->parent = node;
+    }
+    if (node->right) {
+      node->children.push_back(node->right);
+      node->right->parent = node;
+    }
+  });
+
+
+  Tree tree;
+  tree.deg = x.size();
+  tree.length = 0;
+  // Flute-style needs a self edge on the driver node
+  tree.branch.resize(node_num);
+
+  std::function<void(const std::shared_ptr<salt::TreeNode>&, const std::shared_ptr<salt::TreeNode>&, Tree&)> traverse
+      = [&](const std::shared_ptr<salt::TreeNode>& parent, const std::shared_ptr<salt::TreeNode>& node, Tree& tree) {
+          if (!parent) return;
+          if (node) {
+            auto dist = Dist(parent->loc, node->loc);
+            tree.length += dist;
+            tree.branch[node->id] = {node->loc.x, node->loc.y, parent->id};
+          }
+        };
+  traverse(nullptr, salt_tree.source, tree);
+
+  return tree;
+}
+
 Tree SteinerTreeBuilder::makeSteinerTree(const std::vector<int>& x,
                                          const std::vector<int>& y,
                                          const std::vector<int>& s,

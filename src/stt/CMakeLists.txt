@@ -78,6 +78,7 @@ target_sources(stt
 target_include_directories(stt_lib
   PUBLIC
     include
+    /home/wuhongxi/OpenROAD/third-party/salt
   PRIVATE
     ${LEMON_INCLUDE_DIRS}
 )
@@ -85,6 +86,7 @@ target_include_directories(stt_lib
 target_include_directories(stt
   PUBLIC
     include
+    /home/wuhongxi/OpenROAD/third-party/salt
   PRIVATE
     src
 )
@@ -93,6 +95,7 @@ target_link_libraries(stt_lib
     utl_lib
     OpenSTA
     odb
+    salt
 )
 
 target_link_libraries(stt
@@ -100,6 +103,7 @@ target_link_libraries(stt
     utl
     gui
     OpenSTA
+    salt
 )
 
 messages(

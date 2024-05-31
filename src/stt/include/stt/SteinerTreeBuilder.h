@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "utl/Logger.h"
+#include "salt.h"
 
 namespace ord {
 class OpenRoad;
@@ -100,6 +101,31 @@ class SteinerTreeBuilder
                        const std::vector<int>& y,
                        const std::vector<int>& s,
                        int acc);
+  Tree makeSALTTree(const std::vector<int>& x,
+                                         const std::vector<int>& y,
+                                         const int drvr_index);
+
+  void convertToBinaryTree(std::shared_ptr<salt::TreeNode> root) {
+    if (!root || root->children.empty())
+      return;
+
+    // 第一个子节点作为左子节点
+    root->left = root->children[0];
+    convertToBinaryTree(root->left);
+
+    // 遍历其余的兄弟节点，并连接斯坦纳点
+    std::shared_ptr<salt::TreeNode> current = root;
+    auto p = root->loc;
+    for (size_t i = 1; i < root->children.size(); ++i) {
+      // 斯坦纳点
+      auto steinerPoint = std::make_shared<salt::TreeNode>(p);
+      current->right = steinerPoint;
+      steinerPoint->left = root->children[i];
+      convertToBinaryTree(steinerPoint->left);
+      current = steinerPoint;
+    }
+  }
+
   bool checkTree(const Tree& tree) const;
   float getAlpha() const { return alpha_; }
   void setAlpha(float alpha);

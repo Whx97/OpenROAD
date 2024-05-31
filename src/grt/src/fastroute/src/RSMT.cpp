@@ -38,6 +38,49 @@
 #include "utl/Logger.h"
 
 namespace grt {
+using std::vector;
+using std::pair;
+using std::unordered_map;
+vector<pair<int, int>> findSameCoordinates(const vector<int>& real_x, const vector<int>& real_y) {
+    unordered_map<int, vector<int>> x_map, y_map;
+    vector<pair<int, int>> result;
+
+    // 填充x_map，键是x坐标，值是具有相同x坐标的索引列表
+    for (int i = 0; i < real_x.size(); ++i) {
+        x_map[real_x[i]].push_back(i);
+    }
+
+    // 填充y_map，键是y坐标，值是具有相同y坐标的索引列表
+    for (int i = 0; i < real_y.size(); ++i) {
+        y_map[real_y[i]].push_back(i);
+    }
+
+    // 查找具有相同x坐标的索引对
+    for (const auto& x_pair : x_map) {
+        const vector<int>& indices = x_pair.second;
+        if (indices.size() > 1) {
+            for (size_t i = 0; i < indices.size(); ++i) {
+                for (size_t j = i + 1; j < indices.size(); ++j) {
+                    result.emplace_back(indices[i], indices[j]);
+                }
+            }
+        }
+    }
+
+    // 查找具有相同y坐标的索引对
+    for (const auto& y_pair : y_map) {
+        const vector<int>& indices = y_pair.second;
+        if (indices.size() > 1) {
+            for (size_t i = 0; i < indices.size(); ++i) {
+                for (size_t j = i + 1; j < indices.size(); ++j) {
+                    result.emplace_back(indices[i], indices[j]);
+                }
+            }
+        }
+    }
+
+    return result;
+}
 
 using utl::GRT;
 
@@ -684,12 +727,44 @@ void FastRouteCore::gen_brk_RSMT(const bool congestionDriven,
       }
     }
 
+    // 真实坐标
+    std::vector<int> real_x;
+    std::vector<int> real_y;
+    for (auto x : net->getPinX()) {
+      int realx = (int) ((x - x_grid_) / tile_size_);
+      real_x.push_back(realx);
+    }
+    for (auto y : net->getPinY()) {
+      int realy = (int) ((y - y_grid_) / tile_size_);
+      real_y.push_back(realy);
+    }
+
+    auto check = findSameCoordinates(real_x, real_y);
+    for (auto c : check) {
+      real_x[c.first] += 1;
+    }
+    // 真实坐标
+
     // check net alpha because FastRoute has a special implementation of flute
     // TODO: move this flute implementation to SteinerTreeBuilder
     const float net_alpha = stt_builder_->getAlpha(net->getDbNet());
     if (net_alpha > 0.0) {
       rsmt = stt_builder_->makeSteinerTree(
           net->getDbNet(), net->getPinX(), net->getPinY(), net->getDriverIdx());
+
+      // 真实坐标转GCELL
+      for (int j = 0; j < rsmt.branchCount(); j++) {
+        const int x1 = rsmt.branch[j].x;
+        const int y1 = rsmt.branch[j].y;
+
+        const int xreal = tile_size_ * (x1 + 0.5) + x_corner_;
+        const int yreal = tile_size_ * (y1 + 0.5) + y_corner_;
+        rsmt.branch[j].x = xreal;
+        rsmt.branch[j].y = yreal;
+        // const int n = rsmt.branch[j].n;
+        // const int x2 = rsmt.branch[n].x;
+        // const int y2 = rsmt.branch[n].y;
+      }
     } else {
       float coeffV = 1.36;
 
